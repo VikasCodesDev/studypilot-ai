@@ -1,0 +1,29 @@
+# dependencies
+/node_modules
+
+# next.js
+/.next
+/out
+
+# production
+/dist
+
+# cache
+/.eslintcache
+
+# env files
+.env
+.env.local
+!.env.example
+
+# misc
+*.log
+
+# typescript
+*.tsbuildinfo
+
+# drizzle
+/.agents
+
+# misc tools
+.DS_Store
