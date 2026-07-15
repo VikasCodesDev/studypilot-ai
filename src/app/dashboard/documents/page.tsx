@@ -226,9 +226,15 @@ export default function DocumentsPage() {
               <div className="flex min-h-60 flex-col items-center justify-center text-center">
                 <div className="text-4xl font-bold text-emerald-400">PDF</div>
                 <h2 className="mt-4 text-lg font-semibold">Drag and drop a PDF here</h2>
+                <p className="mt-3 text-xs text-amber-400">
+                  Maximum upload size: 5 MB
+                    </p>
                 <p className="mt-2 max-w-md text-sm text-text-secondary">
                   The agent extracts text, uses Gemini OCR for scanned PDFs, analyzes the content, and stores the result in MongoDB.
                 </p>
+                 <p className="text-xs text-amber-400">
+                  Supported format: PDF • Maximum file size: 5 MB
+                    </p>
               </div>
             )}
           </div>
