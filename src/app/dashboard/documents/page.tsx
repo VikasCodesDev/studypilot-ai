@@ -1,12 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState, useCallback } from "react";
-import { upload } from "@vercel/blob/client";
 import { toast } from "sonner";
 import { EmptyState } from "@/components/empty-state";
 import { TableSkeleton } from "@/components/loading-skeleton";
 
-const MAX_PDF_MB = 100;
+const MAX_PDF_MB = 5;
 
 interface Document {
   id: string;
@@ -104,59 +103,41 @@ export default function DocumentsPage() {
 
     setError("");
     setStage("uploading");
-    setProgress(5);
+    setProgress(20);
+
+    const timers = [
+      window.setTimeout(() => {
+        setStage("extracting");
+        setProgress(45);
+      }, 700),
+      window.setTimeout(() => {
+        setStage("analyzing");
+        setProgress(70);
+      }, 1800),
+      window.setTimeout(() => {
+        setStage("saving");
+        setProgress(88);
+      }, 3200),
+    ];
 
     try {
-      // Step 1: browser uploads the PDF straight to Vercel Blob storage.
-      // This never touches our serverless function body, which is what
-      // makes 10MB-100MB uploads work without "Request Entity Too Large".
-      const blob = await upload(file.name, file, {
-        access: "public",
-        handleUploadUrl: "/api/documents/blob-upload",
-        onUploadProgress: ({ percentage }) => {
-          setProgress(Math.min(60, Math.round(percentage * 0.6)));
-        },
-      });
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/documents", { method: "POST", body: formData });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
 
-      // Step 2: the server downloads the PDF from the blob URL, extracts
-      // text, runs AI analysis, and saves everything to MongoDB.
-      setStage("extracting");
-      setProgress(65);
-      const analyzingTimer = window.setTimeout(() => {
-        setStage("analyzing");
-        setProgress(80);
-      }, 1200);
-      const savingTimer = window.setTimeout(() => {
-        setStage("saving");
-        setProgress(92);
-      }, 2600);
-
-      try {
-        const res = await fetch("/api/documents", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            blobUrl: blob.url,
-            filename: file.name,
-            mimeType: file.type || "application/pdf",
-          }),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error);
-
-        setProgress(100);
-        setStage("complete");
-        setSelectedFile(null);
-        setSelectedDoc(data.document);
-        await fetchDocs();
-        toast.success("PDF analyzed and saved");
-      } finally {
-        window.clearTimeout(analyzingTimer);
-        window.clearTimeout(savingTimer);
-      }
+      setProgress(100);
+      setStage("complete");
+      setSelectedFile(null);
+      setSelectedDoc(data.document);
+      await fetchDocs();
+      toast.success("PDF analyzed and saved");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed");
       setStage("error");
+    } finally {
+      timers.forEach(window.clearTimeout);
     }
   }
 
