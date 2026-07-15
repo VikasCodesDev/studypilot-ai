@@ -5,9 +5,9 @@ import { toast } from "sonner";
 import { EmptyState } from "@/components/empty-state";
 import { TableSkeleton } from "@/components/loading-skeleton";
 
-interface Document { id: number; filename: string; }
+interface Document { id: string; filename: string; }
 interface PlanItem { day?: string; time?: string; topic: string; duration: string; priority: string; notes?: string; completed?: boolean; }
-interface StudyPlan { id: number; type: string; title: string; plan: PlanItem[]; status: string; createdAt: string; }
+interface StudyPlan { id: string; type: string; title: string; plan: PlanItem[]; status: string; createdAt: string; }
 
 const PLAN_TYPES = [
   { value: "daily", label: "📆 Daily Plan", desc: "Today's schedule" },
@@ -23,7 +23,7 @@ export default function PlannerPage() {
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [planType, setPlanType] = useState("daily");
-  const [selectedDoc, setSelectedDoc] = useState<number | "">("");
+  const [selectedDoc, setSelectedDoc] = useState<string>("");
   const [examDate, setExamDate] = useState("");
   const [hoursPerDay, setHoursPerDay] = useState("4");
   const [viewPlan, setViewPlan] = useState<StudyPlan | null>(null);
@@ -100,7 +100,7 @@ export default function PlannerPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
           <div>
             <label className="block text-sm text-text-secondary mb-2">Document (optional)</label>
-            <select value={selectedDoc} onChange={(e) => setSelectedDoc(e.target.value ? parseInt(e.target.value) : "")}
+            <select value={selectedDoc} onChange={(e) => setSelectedDoc(e.target.value)}
               className="w-full px-4 py-3 rounded-xl bg-surface border border-border-subtle text-text-primary focus:outline-none focus:border-emerald-500/50">
               <option value="">General plan</option>
               {docs.map((d) => <option key={d.id} value={d.id}>{d.filename}</option>)}

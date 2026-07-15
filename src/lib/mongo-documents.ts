@@ -5,6 +5,7 @@ import {
 } from "mongodb";
 import { callAI, parseAIJson } from "@/lib/ai-provider";
 import { getMongoDb } from "@/lib/mongodb";
+import { extractPdfText } from "@/lib/pdf";
 
 export interface PdfAnalysis {
   subject: string;
@@ -169,6 +170,49 @@ export async function savePdfDocument({
   }
 
   return doc;
+}
+
+/**
+ * Full PDF Intelligence pipeline: extract -> analyze -> persist.
+ * Shared by both upload paths (small direct-body uploads and large
+ * blob-URL uploads) so there is exactly one place that implements
+ * "what happens to a PDF's bytes", per production-architecture practice.
+ */
+export async function processAndSavePdf({
+  userId,
+  filename,
+  mimeType,
+  bytes,
+}: {
+  userId: number;
+  filename: string;
+  mimeType: string;
+  bytes: Buffer;
+}) {
+  if (bytes.length === 0) {
+    throw new Error("Uploaded PDF is empty");
+  }
+
+  const extracted = await extractPdfText(bytes, filename);
+  if (!extracted.text) {
+    throw new Error("Unable to extract text from this PDF");
+  }
+
+  const analyzed = await analyzeExtractedText(extracted.text, filename);
+  const doc = await savePdfDocument({
+    userId,
+    filename,
+    mimeType,
+    bytes,
+    extractedText: extracted.text,
+    extractionMethod: extracted.extractionMethod,
+    pageCount: extracted.pageCount,
+    analysis: analyzed.analysis,
+    aiProvider: analyzed.provider,
+    aiModel: analyzed.model,
+  });
+
+  return { doc, extracted, analyzed };
 }
 
 export async function listPdfDocuments(userId: number) {

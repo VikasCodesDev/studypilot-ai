@@ -5,8 +5,8 @@ import { toast } from "sonner";
 import { EmptyState } from "@/components/empty-state";
 import { TableSkeleton } from "@/components/loading-skeleton";
 
-interface Document { id: number; filename: string; subject: string | null; }
-interface Note { id: number; documentId: number; type: string; title: string; content: string; topic: string | null; createdAt: string; }
+interface Document { id: string; filename: string; subject: string | null; }
+interface Note { id: string; documentId: string; type: string; title: string; content: string; topic: string | null; createdAt: string; }
 
 const NOTE_TYPES = [
   { value: "detailed", label: "📚 Detailed Notes", desc: "Comprehensive study notes" },
@@ -23,7 +23,7 @@ export default function NotesPage() {
   const [notesList, setNotesList] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
-  const [selectedDoc, setSelectedDoc] = useState<number | "">("");
+  const [selectedDoc, setSelectedDoc] = useState<string>("");
   const [noteType, setNoteType] = useState("detailed");
   const [topicInput, setTopicInput] = useState("");
   const [viewNote, setViewNote] = useState<Note | null>(null);
@@ -83,7 +83,7 @@ export default function NotesPage() {
             <label className="block text-sm text-text-secondary mb-2">Document</label>
             <select
               value={selectedDoc}
-              onChange={(e) => setSelectedDoc(e.target.value ? parseInt(e.target.value) : "")}
+              onChange={(e) => setSelectedDoc(e.target.value)}
               className="w-full px-4 py-3 rounded-xl bg-surface border border-border-subtle text-text-primary focus:outline-none focus:border-emerald-500/50"
             >
               <option value="">Select a document</option>

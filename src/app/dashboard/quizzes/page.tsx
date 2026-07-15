@@ -6,9 +6,9 @@ import { EmptyState } from "@/components/empty-state";
 import { TableSkeleton } from "@/components/loading-skeleton";
 import type { QuizQuestion, UserAnswer } from "@/db/schema";
 
-interface Document { id: number; filename: string; }
-interface Quiz { id: number; title: string; difficulty: string; questionType: string; questions: QuizQuestion[]; totalQuestions: number; createdAt: string; }
-interface Attempt { id: number; quizId: number; score: number; totalQuestions: number; correctAnswers: number; feedback: string | null; weakTopics: string[] | null; strongTopics: string[] | null; completedAt: string; answers: UserAnswer[]; }
+interface Document { id: string; filename: string; }
+interface Quiz { id: string; title: string; difficulty: string; questionType: string; questions: QuizQuestion[]; totalQuestions: number; createdAt: string; }
+interface Attempt { id: string; quizId: string; score: number; totalQuestions: number; correctAnswers: number; feedback: string | null; weakTopics: string[] | null; strongTopics: string[] | null; completedAt: string; answers: UserAnswer[]; }
 
 export default function QuizzesPage() {
   const [docs, setDocs] = useState<Document[]>([]);
@@ -16,7 +16,7 @@ export default function QuizzesPage() {
   const [attempts, setAttempts] = useState<Attempt[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
-  const [selectedDoc, setSelectedDoc] = useState<number | "">("");
+  const [selectedDoc, setSelectedDoc] = useState<string>("");
   const [difficulty, setDifficulty] = useState("medium");
   const [questionType, setQuestionType] = useState("mcq");
   const [count, setCount] = useState(5);
@@ -243,7 +243,7 @@ export default function QuizzesPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
             <div>
               <label className="block text-sm text-text-secondary mb-2">Document</label>
-              <select value={selectedDoc} onChange={(e) => setSelectedDoc(e.target.value ? parseInt(e.target.value) : "")}
+              <select value={selectedDoc} onChange={(e) => setSelectedDoc(e.target.value)}
                 className="w-full px-4 py-3 rounded-xl bg-surface border border-border-subtle text-text-primary focus:outline-none focus:border-emerald-500/50">
                 <option value="">Select document</option>
                 {docs.map((d) => <option key={d.id} value={d.id}>{d.filename}</option>)}
