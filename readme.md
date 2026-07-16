@@ -178,17 +178,6 @@ The platform improves education by:
 - Accessible education
 
 ---
-
-# 📸 Screenshots
-
-| Dashboard | Smart Notes |
-|-----------|-------------|
-| Add Screenshot | Add Screenshot |
-
-| Quiz | Analytics |
-|------|-----------|
-| Add Screenshot | Add Screenshot |
-
 ---
 
 # 🚀 Live Demo
