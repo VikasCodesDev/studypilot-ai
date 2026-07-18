@@ -23,6 +23,25 @@ const GEMINI_MODELS = ["gemini-2.0-flash"];
 const MAX_RETRIES = 2;
 const TIMEOUT_MS = 60000;
 
+const QUOTA_EXCEEDED_MESSAGE = "Free AI API key limit has been reached. The application is working correctly, but the free API quota has been exhausted. Please use another API key or wait until the quota resets.";
+
+function isQuotaOrRateLimitError(msg: string): boolean {
+  const lowercaseMsg = msg.toLowerCase();
+  return (
+    lowercaseMsg.includes("rate_limit") ||
+    lowercaseMsg.includes("rate_limit_exceeded") ||
+    lowercaseMsg.includes("429") ||
+    lowercaseMsg.includes("quota exceeded") ||
+    lowercaseMsg.includes("tpm exceeded") ||
+    lowercaseMsg.includes("rpm exceeded") ||
+    lowercaseMsg.includes("free tier exhausted") ||
+    lowercaseMsg.includes("resource has been exhausted") ||
+    lowercaseMsg.includes("quota_exceeded") ||
+    (lowercaseMsg.includes("quota") && lowercaseMsg.includes("exhausted")) ||
+    (lowercaseMsg.includes("limit") && lowercaseMsg.includes("exhausted"))
+  );
+}
+
 async function callGroq(options: AIRequestOptions): Promise<AIResponse> {
   const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) throw new Error("GROQ_API_KEY not configured");
@@ -168,6 +187,9 @@ export async function extractPdfTextWithGemini(
 
     if (!res.ok) {
       const errText = await res.text();
+      if (res.status === 429 || isQuotaOrRateLimitError(errText)) {
+        throw new Error(QUOTA_EXCEEDED_MESSAGE);
+      }
       throw new Error(`Gemini PDF extraction error ${res.status}: ${errText}`);
     }
 
@@ -213,6 +235,9 @@ export async function callAI(options: AIRequestOptions): Promise<AIResponse> {
   }
 
   console.error("[AI Provider] All providers failed:", errors);
+  if (errors.some((err) => isQuotaOrRateLimitError(err))) {
+    throw new Error(QUOTA_EXCEEDED_MESSAGE);
+  }
   throw new Error(
     `AI service unavailable. Configure GROQ_API_KEY or GOOGLE_GEMINI_API_KEY. Errors: ${errors.join("; ")}`
   );
