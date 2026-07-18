@@ -78,7 +78,29 @@ ${doc.extractedText.substring(0, 10000)}`,
       temperature: 0.6,
     });
 
-    const questions = parseAIJson<QuizQuestion[]>(result.content);
+    let questionsRaw = parseAIJson<any>(result.content);
+    
+    // If the parsed JSON is an object, try to extract the array of questions
+    if (questionsRaw && typeof questionsRaw === "object" && !Array.isArray(questionsRaw)) {
+      if (Array.isArray(questionsRaw.questions)) {
+        questionsRaw = questionsRaw.questions;
+      } else if (Array.isArray(questionsRaw.quiz)) {
+        questionsRaw = questionsRaw.quiz;
+      } else if (Array.isArray(questionsRaw.data)) {
+        questionsRaw = questionsRaw.data;
+      } else {
+        // Search for any array property in the object
+        const keys = Object.keys(questionsRaw);
+        for (const key of keys) {
+          if (Array.isArray(questionsRaw[key])) {
+            questionsRaw = questionsRaw[key];
+            break;
+          }
+        }
+      }
+    }
+
+    const questions = questionsRaw as QuizQuestion[];
     if (!Array.isArray(questions) || questions.length === 0) {
       throw new Error("AI returned invalid quiz format");
     }

@@ -218,38 +218,115 @@ export async function callAI(options: AIRequestOptions): Promise<AIResponse> {
   );
 }
 
+function cleanTrailingCommas(str: string): string {
+  let result = "";
+  let inString = false;
+  let escape = false;
+  for (let i = 0; i < str.length; i++) {
+    const char = str[i];
+    if (escape) {
+      result += char;
+      escape = false;
+      continue;
+    }
+    if (char === "\\") {
+      result += char;
+      escape = true;
+      continue;
+    }
+    if (char === '"') {
+      inString = !inString;
+      result += char;
+      continue;
+    }
+    if (!inString) {
+      if (char === ",") {
+        let nextNonWhitespaceIdx = i + 1;
+        while (nextNonWhitespaceIdx < str.length && /\s/.test(str[nextNonWhitespaceIdx])) {
+          nextNonWhitespaceIdx++;
+        }
+        if (
+          nextNonWhitespaceIdx < str.length &&
+          (str[nextNonWhitespaceIdx] === "}" || str[nextNonWhitespaceIdx] === "]")
+        ) {
+          continue;
+        }
+      }
+    }
+    result += char;
+  }
+  return result;
+}
+
+function extractOuterJson(content: string): string {
+  const firstCurly = content.indexOf("{");
+  const firstSquare = content.indexOf("[");
+  
+  if (firstCurly === -1 && firstSquare === -1) {
+    return content;
+  }
+  
+  let startChar = "";
+  let endChar = "";
+  let startIdx = -1;
+  
+  if (firstCurly !== -1 && (firstSquare === -1 || firstCurly < firstSquare)) {
+    startChar = "{";
+    endChar = "}";
+    startIdx = firstCurly;
+  } else {
+    startChar = "[";
+    endChar = "]";
+    startIdx = firstSquare;
+  }
+  
+  const endIdx = content.lastIndexOf(endChar);
+  if (endIdx !== -1 && endIdx > startIdx) {
+    return content.substring(startIdx, endIdx + 1);
+  }
+  
+  return content;
+}
+
 export function parseAIJson<T>(content: string): T {
+  // Remove markdown code fences first
+  const codeFenceMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  let cleaned = codeFenceMatch ? codeFenceMatch[1].trim() : content.trim();
+
   // Try direct parse
   try {
-    return JSON.parse(content) as T;
+    return JSON.parse(cleaned) as T;
   } catch {
-    // Try extracting JSON from markdown code blocks
-    const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
-    if (jsonMatch) {
+    // Try extracting outer JSON
+    const extracted = extractOuterJson(cleaned);
+    try {
+      return JSON.parse(extracted) as T;
+    } catch {
+      // Try cleaning trailing commas
+      const commaCleaned = cleanTrailingCommas(extracted);
       try {
-        return JSON.parse(jsonMatch[1].trim()) as T;
+        return JSON.parse(commaCleaned) as T;
       } catch {
-        // fall through
+        // Fall back to original regex search approach if extraction failed
+        const objectMatch = cleaned.match(/(\{[\s\S]*\})/);
+        if (objectMatch) {
+          try {
+            return JSON.parse(cleanTrailingCommas(objectMatch[1])) as T;
+          } catch {
+            // fall through
+          }
+        }
+        const arrayMatch = cleaned.match(/(\[[\s\S]*\])/);
+        if (arrayMatch) {
+          try {
+            return JSON.parse(cleanTrailingCommas(arrayMatch[1])) as T;
+          } catch {
+            // fall through
+          }
+        }
+        throw new Error("Failed to parse AI response as JSON");
       }
     }
-    // Try finding JSON object/array
-    const objectMatch = content.match(/(\{[\s\S]*\})/);
-    if (objectMatch) {
-      try {
-        return JSON.parse(objectMatch[1]) as T;
-      } catch {
-        // fall through
-      }
-    }
-    const arrayMatch = content.match(/(\[[\s\S]*\])/);
-    if (arrayMatch) {
-      try {
-        return JSON.parse(arrayMatch[1]) as T;
-      } catch {
-        // fall through
-      }
-    }
-    throw new Error("Failed to parse AI response as JSON");
   }
 }
 
